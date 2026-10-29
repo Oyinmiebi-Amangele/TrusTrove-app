@@ -2,9 +2,11 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -114,7 +116,11 @@ func TestRecordFailedEventIncrementsAttempts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read failed event: %v", err)
 	}
-	if contractID != event.ContractID || ledger != event.Ledger || string(rawTopic) != `["AAAA","BBBB"]` || rawValue != event.Value || errorText != event.ErrorText || attempts != 2 {
+	var topic []string
+	if err := json.Unmarshal(rawTopic, &topic); err != nil {
+		t.Fatalf("decode failed event topic: %v", err)
+	}
+	if contractID != event.ContractID || ledger != event.Ledger || !reflect.DeepEqual(topic, event.Topic) || rawValue != event.Value || errorText != event.ErrorText || attempts != 2 {
 		t.Errorf("failed event row does not match: contract=%q ledger=%d topic=%s value=%q error=%q attempts=%d", contractID, ledger, rawTopic, rawValue, errorText, attempts)
 	}
 }
